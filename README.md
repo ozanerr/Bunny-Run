@@ -1,4 +1,5 @@
-Dibuat Oleh Trailblazer
+# 🎮 Bunny Run
+Dibuat Oleh Kelompok Trailblazer
 ## 👥 Anggota Kelompok
 
 | Nama Lengkap             | NIM         |
