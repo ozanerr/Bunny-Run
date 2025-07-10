@@ -6,6 +6,9 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
+    path: Assets/Scenes/SplashScene.unity
+    guid: daeb9607e1138c448a0ae152c4649152
+  - enabled: 1
     path: Assets/Scenes/level1.unity
     guid: 14a297efa4e0ff6498efdce1efa9ce36
   - enabled: 1
@@ -14,6 +17,15 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/level3.unity
     guid: be2cd2bcbb9206b48b067facb2ed326f
+  - enabled: 1
+    path: Assets/Scenes/WinSplashScreen.unity
+    guid: de1f626486799e149b1df11733af10dc
+  - enabled: 1
+    path: Assets/Scenes/LoseSplashScreen.unity
+    guid: 114064c7548aa77438c36a0b56976197
+  - enabled: 1
+    path: Assets/Scenes/CreditScene.unity
+    guid: 6ff17f0d8569e9244aacfced2faa7e73
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_UseUCBPForAssetBundles: 0

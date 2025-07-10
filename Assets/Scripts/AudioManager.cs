@@ -17,6 +17,7 @@ public class AudioManager : MonoBehaviour
     public AudioClip gateSound;
     public AudioClip finishSound;
     public AudioClip gameOverSound;
+    public AudioClip wallBreakSound; // <-- BARIS INI DITAMBAHKAN
 
     void Awake()
     {
@@ -31,8 +32,11 @@ public class AudioManager : MonoBehaviour
         }
 
         AudioSource[] sources = GetComponents<AudioSource>();
-        sfxSource = sources[0];
-        bgmSource = sources[1];
+        if (sources.Length >= 2)
+        {
+            sfxSource = sources[0];
+            bgmSource = sources[1];
+        }
 
         if (bgmSource != null && backgroundMusic != null)
         {
@@ -74,6 +78,15 @@ public class AudioManager : MonoBehaviour
     public void PlayGameOverSound()
     {
         if (gameOverSound != null) sfxSource.PlayOneShot(gameOverSound);
+    }
+
+    // --- FUNGSI BARU UNTUK SUARA TEMBOK ---
+    public void PlayWallBreakSound()
+    {
+        if (wallBreakSound != null)
+        {
+            sfxSource.PlayOneShot(wallBreakSound);
+        }
     }
 
     public void PlayFinishSoundAndGoToNextLevel()

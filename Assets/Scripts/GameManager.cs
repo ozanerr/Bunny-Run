@@ -8,6 +8,8 @@ public class GameManager : MonoBehaviour
     [Header("Game State")]
     public int initialLives = 3;
     public static int currentLives { get; private set; } = -1;
+    public int lastLevelBuildIndex = 3;
+
     public bool IsGameStarted { get; private set; }
     public bool IsGameOver { get; private set; }
     public bool isPaused { get; private set; }
@@ -50,14 +52,20 @@ public class GameManager : MonoBehaviour
 
     void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
+        if (scene.buildIndex == 1 && currentLives <= 0)
+        {
+            Debug.Log("Kembali ke Level 1 setelah kalah total. Mereset nyawa.");
+            currentLives = initialLives;
+        }
+
         InitializeLevel();
     }
 
     void InitializeLevel()
     {
-        playerManager = FindObjectOfType<PlayerManager>();
-        pathFollower = FindObjectOfType<PathFollower>();
-        livesUIManager = FindObjectOfType<LivesUIManager>();
+        playerManager = FindAnyObjectByType<PlayerManager>();
+        pathFollower = FindAnyObjectByType<PathFollower>();
+        livesUIManager = FindAnyObjectByType<LivesUIManager>();
 
         tapToStartUI_Parent = GameObject.Find("Tap_To_Start");
         gameOverUI = GameObject.Find("Game_Over");
@@ -132,17 +140,15 @@ public class GameManager : MonoBehaviour
         }
         else
         {
-            currentLives = initialLives;
-            SceneManager.LoadScene(0);
+            Debug.Log("Nyawa habis! Pindah ke Lose Screen.");
+            SceneManager.LoadScene("LoseSplashScreen");
         }
     }
 
     public void TogglePause()
     {
         if (!IsGameStarted || IsGameOver) return;
-
         isPaused = !isPaused;
-
         if (isPaused)
         {
             Time.timeScale = 0f;
@@ -158,17 +164,27 @@ public class GameManager : MonoBehaviour
     public void LoadNextLevel()
     {
         int currentSceneIndex = SceneManager.GetActiveScene().buildIndex;
-        int nextSceneIndex = currentSceneIndex + 1;
 
-        if (nextSceneIndex < SceneManager.sceneCountInBuildSettings)
+        if (currentSceneIndex >= lastLevelBuildIndex)
         {
-            SceneManager.LoadScene(nextSceneIndex);
+            Debug.Log("Game Selesai! Pindah ke Win Screen.");
+            SceneManager.LoadScene("WinSplashScreen");
         }
         else
         {
-            currentLives = initialLives;
-            Debug.Log("Selamat! Anda telah menyelesaikan semua level! Kembali ke Level 1.");
-            SceneManager.LoadScene(0);
+            int nextSceneIndex = currentSceneIndex + 1;
+            SceneManager.LoadScene(nextSceneIndex);
         }
+    }
+
+    public void ResetGame()
+    {
+        currentLives = initialLives;
+        SceneManager.LoadScene(0);
+    }
+
+    public void ResetLives()
+    {
+        currentLives = initialLives;
     }
 }

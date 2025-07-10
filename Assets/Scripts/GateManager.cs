@@ -4,10 +4,15 @@ using System.Collections;
 
 public class GateManager : MonoBehaviour
 {
-    [Header("Gate Settings")]
+    [Header("Tipe Objek")]
+    // Saklar baru: centang ini jika objek adalah tembok yang bisa dihancurkan
+    public bool isBreakableWall = false;
+
+    [Header("Pengaturan Gerbang & Tembok")]
     public bool multiply = false;
     public bool isSubtract = false;
     public bool isDivision = false;
+    // Untuk Tembok, nilai ini akan menjadi jumlah pengurangan
     public int gateValue = 0;
     public GateGroup gateGroup;
 
@@ -18,7 +23,11 @@ public class GateManager : MonoBehaviour
 
     void Awake()
     {
-        InitGate();
+        // Hanya inisialisasi teks jika ini BUKAN tembok
+        if (!isBreakableWall)
+        {
+            InitGate();
+        }
     }
 
     public void InitGate()
@@ -36,39 +45,72 @@ public class GateManager : MonoBehaviour
             }
         }
 
-        if (GateNo != null) // Diubah
+        // --- PERUBAHAN TAMPILAN TEKS ---
+        if (GateNo != null)
         {
             if (isSubtract)
-                GateNo.text = $"sub {gateValue}";
+                GateNo.text = $"SUB {gateValue}";
             else if (multiply)
-                GateNo.text = $"mpy {gateValue}";
+                GateNo.text = $"MPY {gateValue}";
             else if (isDivision)
-                GateNo.text = $"div {gateValue}";
+                GateNo.text = $"DIV {gateValue}";
             else
-                GateNo.text = $"plus {gateValue}";
+                GateNo.text = $"PLUS {gateValue}";
         }
         triggered = false;
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        if (isSubtract && other.CompareTag("Runner") && other.GetComponentInParent<PlayerManager>()?.RunnerCount <= 1)
-        {
-            return;
-        }
-
-        if (triggered || (gateGroup != null && gateGroup.HasTriggered)) return;
+        if (triggered) return;
 
         if (other.CompareTag("Runner"))
         {
-            AudioManager.instance.PlayGateSound();
-            StartCoroutine(TriggerGate(other));
+            triggered = true;
+
+            if (isBreakableWall)
+            {
+                HandleWallCollision(other);
+            }
+            else
+            {
+                HandleGateCollision(other);
+            }
         }
+    }
+
+    // --- PERUBAHAN LOGIKA TEMBOK ---
+    private void HandleWallCollision(Collider runnerCollider)
+    {
+        Debug.Log("Runner menabrak tembok! Mengurangi runner sebanyak: " + gateValue);
+        AudioManager.instance.PlayWallBreakSound();
+
+        // Temukan PlayerManager
+        PlayerManager playerManager = FindObjectOfType<PlayerManager>();
+        if (playerManager != null)
+        {
+            // Kurangi runner sejumlah gateValue
+            playerManager.KillRunners(gateValue);
+        }
+
+        // Hancurkan tembok itu sendiri setelah mengurangi runner
+        Destroy(gameObject);
+    }
+
+    private void HandleGateCollision(Collider runnerCollider)
+    {
+        if (gateGroup != null && gateGroup.HasTriggered)
+        {
+            triggered = false;
+            return;
+        }
+
+        AudioManager.instance.PlayGateSound();
+        StartCoroutine(TriggerGate(runnerCollider));
     }
 
     private IEnumerator TriggerGate(Collider other)
     {
-        triggered = true;
         if (gateGroup != null)
         {
             gateGroup.MarkTriggered();
@@ -80,7 +122,6 @@ public class GateManager : MonoBehaviour
             int currentCount = playerManager.RunnerCount;
             int addAmount = 0;
 
-            // Blok Kalkulasi Diubah
             if (isSubtract)
             {
                 addAmount = -Mathf.Min(gateValue, currentCount);

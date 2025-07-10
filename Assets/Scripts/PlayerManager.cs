@@ -18,6 +18,10 @@ public class PlayerManager : MonoBehaviour
     private List<GameObject> runners = new List<GameObject>();
     public int RunnerCount => runners.Count;
 
+    // Timer untuk optimasi
+    private float heavyUpdateTimer = 0f;
+    private float heavyUpdateInterval = 0.1f;
+
     void Start()
     {
         player = transform;
@@ -28,10 +32,40 @@ public class PlayerManager : MonoBehaviour
 
     void Update()
     {
-        RemoveDeadRunners();
         UpdateCounter();
-        UpdateCenterReference();
+        CheckForGameOver();
 
+        heavyUpdateTimer += Time.deltaTime;
+        if (heavyUpdateTimer >= heavyUpdateInterval)
+        {
+            RemoveDeadRunners();
+            UpdateCenterReference();
+            heavyUpdateTimer = 0f;
+        }
+    }
+
+    // --- FUNGSI INI DIPERBAIKI UNTUK SPAWN INSTAN ---
+    private IEnumerator SpawnRunnerWithDelay(int number)
+    {
+        Quaternion baseRotation = runners.Count > 0 ? runners[0].transform.rotation : transform.rotation;
+
+        for (int i = 0; i < number; i++)
+        {
+            Vector3 formOffset = GetFormationOffset(runners.Count);
+            GameObject newRunner = Instantiate(runner, transform.position + formOffset, baseRotation, transform);
+            runners.Add(newRunner);
+
+            // Jeda 'yield return null' dihapus dari dalam loop agar instan
+        }
+
+        // Coroutine sekarang hanya menunggu satu frame setelah SEMUA runner dibuat.
+        yield return null;
+    }
+
+    // --- SISA SCRIPT ANDA TIDAK DIUBAH ---
+
+    private void CheckForGameOver()
+    {
         if (GameManager.instance != null && GameManager.instance.IsGameStarted && !GameManager.instance.IsGameOver)
         {
             if (runners.Count == 0)
@@ -44,7 +78,10 @@ public class PlayerManager : MonoBehaviour
 
     private void UpdateCounter()
     {
-        counterText.text = runners.Count.ToString();
+        if (counterText != null)
+        {
+            counterText.text = runners.Count.ToString();
+        }
     }
 
     private void RemoveDeadRunners()
@@ -53,7 +90,10 @@ public class PlayerManager : MonoBehaviour
         {
             if (runners[i] == null || runners[i].transform.position.y < -10f)
             {
-                Destroy(runners[i]);
+                if (runners[i] != null)
+                {
+                    Destroy(runners[i]);
+                }
                 runners.RemoveAt(i);
             }
         }
@@ -72,31 +112,6 @@ public class PlayerManager : MonoBehaviour
         float x = distanceFactor * Mathf.Sqrt(index) * Mathf.Cos(index * radius);
         float z = distanceFactor * Mathf.Sqrt(index) * Mathf.Sin(index * radius);
         return new Vector3(x, yOffset, z);
-    }
-
-    private IEnumerator SpawnRunnerWithDelay(int number)
-    {
-        List<Rigidbody> newRbs = new List<Rigidbody>();
-        Quaternion baseRotation = runners.Count > 0 ? runners[0].transform.rotation : transform.rotation;
-        Transform rotationTarget = runners.Count > 0 ? runners[0].transform : transform;
-
-        for (int i = 0; i < number; i++)
-        {
-            Vector3 formOffset = GetFormationOffset(runners.Count);
-            GameObject newRunner = Instantiate(runner, transform.position + formOffset, baseRotation, transform);
-
-            Rigidbody rb = newRunner.GetComponent<Rigidbody>();
-            if (rb != null)
-            {
-                rb.isKinematic = true;
-                newRbs.Add(rb);
-            }
-            runners.Add(newRunner);
-        }
-
-        float gateZ = transform.position.z;
-        StartCoroutine(ActivateRunnersAfterGate(newRbs, gateZ));
-        yield return null;
     }
 
     public void CloneFromGate(int amount)
@@ -125,7 +140,10 @@ public class PlayerManager : MonoBehaviour
             if (r != null)
                 runnerTransforms.Add(r.transform);
         }
-        runnerCenter.SetRunners(runnerTransforms);
+        if (runnerCenter != null)
+        {
+            runnerCenter.SetRunners(runnerTransforms);
+        }
     }
 
     public void RemoveRunner(GameObject runnerToRemove)
@@ -137,48 +155,13 @@ public class PlayerManager : MonoBehaviour
         }
     }
 
-    private IEnumerator ActivateRunnersAfterGate(List<Rigidbody> newRbs, float gateZ)
-    {
-        bool allPassed = false;
-
-        while (!allPassed)
-        {
-            allPassed = true;
-
-            foreach (var rb in newRbs)
-            {
-                if (rb != null)
-                {
-                    float runnerZ = rb.transform.position.z;
-                    if (runnerZ < gateZ + 2f)
-                    {
-                        allPassed = false;
-                        break;
-                    }
-                }
-            }
-
-            yield return null;
-        }
-
-        foreach (var rb in newRbs)
-        {
-            if (rb != null)
-            {
-                rb.isKinematic = false;
-            }
-        }
-    }
-
     public void KillRunners(int amount)
     {
         int count = Mathf.Min(amount, runners.Count);
-
         for (int i = 0; i < count; i++)
         {
             GameObject runner = runners[runners.Count - 1];
             runners.RemoveAt(runners.Count - 1);
-
             if (runner != null)
             {
                 Destroy(runner);
@@ -216,7 +199,6 @@ public class PlayerManager : MonoBehaviour
                     rb.angularVelocity = Vector3.zero;
                     rb.isKinematic = true;
                 }
-
                 Animator anim = runnerInstance.GetComponent<Animator>();
                 if (anim != null)
                 {
@@ -234,7 +216,6 @@ public class PlayerManager : MonoBehaviour
         {
             return 0f;
         }
-
         foreach (GameObject runner in runners)
         {
             if (runner != null)
